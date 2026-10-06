@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>每日作息 · 三餐 · 运动记录</title>
+    <style>
+        * { box-sizing: border-box; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif; }
+        body {
+            background: #f4f7fb; margin: 0; min-height: 100vh;
+            display: flex; justify-content: center; align-items: center; padding: 16px;
+        }
+        .app {
+            max-width: 1000px; width: 100%; background: white;
+            border-radius: 28px; box-shadow: 0 18px 35px rgba(0,0,0,0.08);
+            padding: 28px 24px;
+        }
+        h1 { font-size: 1.9rem; font-weight: 600; margin: 0 0 6px 0; color: #1e2b3c; display: flex; align-items: center; gap: 10px; }
+        h1 small { font-size: 0.9rem; font-weight: 400; color: #6f7d8f; background: #eef2f7; padding: 4px 12px; border-radius: 40px; margin-left: 8px; }
+        .subhead {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 16px; border-bottom: 1px solid #e3e9f2;
+            padding-bottom: 16px; flex-wrap: wrap; gap: 10px;
+        }
+        .date-area { display: flex; flex-direction: column; gap: 8px; }
+        .date-badge {
+            background: #eef2f7; border-radius: 30px; padding: 8px 18px;
+            font-weight: 500; color: #1e2b3c; display: flex; align-items: center; gap: 8px; font-size: 1rem;
+        }
+        .date-badge span { font-weight: 600; color: #2d5a9b; }
+        .week-badge {
+            background: #fff4e5; border-radius: 30px; padding: 8px 18px;
+            font-weight: 500; color: #8a5a00; display: flex; align-items: center; gap: 8px;
+            font-size: 0.92rem; border: 1px solid #ffe1b3;
+        }
+        .week-badge.used { background: #ffe5e5; color: #a13030; border-color: #ffc9c9; }
+        .week-badge .quota { font-weight: 700; }
+        .top-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+        .clear-btn {
+            background: transparent; border: 1px solid #cdd9e9; color: #3b4f66;
+            padding: 8px 18px; border-radius: 30px; font-weight: 500; font-size: 0.9rem;
+            cursor: pointer; display: flex; align-items: center; gap: 6px; transition: all 0.2s;
+        }
+        .clear-btn:hover { background: #f0f4fa; border-color: #a0b4cc; }
+        .export-btn { background: #e8f0fe; border-color: #b8d0f5; color: #1a3a6b; }
+        .export-btn:hover { background: #d6e4fb; }
+        .grid { display: grid; grid-template-columns: 1fr 1.3fr; gap: 22px; margin-bottom: 18px; }
+        @media (max-width: 700px) { .grid { grid-template-columns: 1fr; gap: 18px; } .app { padding: 20px 16px; } h1 { font-size: 1.6rem; } }
+        .card {
+            background: #ffffff; border-radius: 22px; border: 1px solid #e6edf6;
+            padding: 18px 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+        }
+        .card h2 { font-size: 1.2rem; font-weight: 600; margin: 0 0 14px 0; color: #1e2b3c; display: flex; align-items: center; gap: 8px; }
+        .field-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
+        .field-label { font-weight: 500; color: #2d3f56; display: flex; align-items: center; gap: 8px; font-size: 1rem; }
+        input[type="time"] {
+            border: 1px solid #cfddee; border-radius: 30px; padding: 8px 14px;
+            font-size: 0.95rem; background: #f9fcff; color: #1e2b3c; outline: none;
+            transition: 0.15s; font-family: inherit; width: 140px;
+        }
+        input[type="time"]:focus { border-color: #2d5a9b; box-shadow: 0 0 0 3px rgba(45,90,155,0.1); }
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
+        .checkbox-item {
+            display: flex; align-items: center; gap: 8px; background: #f7faff;
+            padding: 8px 14px; border-radius: 40px; border: 1px solid #e1e9f3;
+            transition: all 0.1s; cursor: pointer;
+        }
+        .checkbox-item:hover { background: #edf4fe; }
+        .checkbox-item input[type="checkbox"] { width: 18px; height: 18px; accent-color: #2d5a9b; margin: 0; cursor: pointer; }
+        .checkbox-item label { font-size: 0.95rem; color: #1f344a; font-weight: 500; cursor: pointer; user-select: none; }
+        .meal-section { margin-bottom: 18px; }
+        .meal-title { font-weight: 600; color: #1e2b3c; margin-bottom: 10px; font-size: 1rem; display: flex; align-items: center; gap: 6px; }
+        .meal-checkboxes { display: flex; flex-wrap: wrap; gap: 12px; padding-left: 6px; }
+        .meal-checkboxes .checkbox-item { background: #f3f8ff; padding: 6px 16px; }
+        .sweet-card {
+            background: #fff8f0; border: 1px solid #ffe0c2; border-radius: 16px;
+            padding: 14px 16px; margin-top: 12px;
+        }
+        .sweet-card .checkbox-item { background: #fff; border-color: #ffd9b3; }
+        .action-buttons {
+            display: flex; justify-content: flex-end; gap: 12px;
+            margin-top: 24px; border-top: 1px solid #e6edf6; padding-top: 20px; flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 26px; border-radius: 40px; font-weight: 600; font-size: 0.95rem;
+            border: none; cursor: pointer; transition: 0.15s; display: flex;
+            align-items: center; gap: 8px; font-family: inherit;
+        }
+        .btn-primary { background: #1e2b3c; color: white; box-shadow: 0 4px 8px rgba(0,0,0,0.05); }
+        .btn-primary:hover { background: #14202e; }
+        .btn-secondary { background: #ecf2fa; color: #1e2b3c; }
+        .btn-secondary:hover { background: #d9e4f2; }
+        .summary-box {
+            background: #f0f6ff; border-radius: 18px; padding: 16px 20px;
+            margin-top: 20px; border-left: 6px solid #2d5a9b; font-size: 0.95rem;
+            color: #1e2b3c; line-height: 1.6;
+        }
+        .summary-box strong { font-weight: 700; color: #0f1e2f; }
+        .summary-box .summary-item { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 4px; }
+        .summary-box .tag {
+            background: white; padding: 4px 14px; border-radius: 30px;
+            font-size: 0.85rem; font-weight: 500; color: #1e2b3c;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            border: 1px solid #d6e3f5; display: inline-flex; align-items: center; gap: 6px;
+        }
+        .mood-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px;
+        }
+        .mood-box {
+            background: #f7faff; border: 1px solid #e1e9f3; border-radius: 16px; padding: 12px;
+        }
+        .mood-box .mood-title {
+            font-size: 0.9rem; font-weight: 600; color: #2d3f56; margin-bottom: 8px;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .emoji-picker { display: flex; flex-wrap: wrap; gap: 6px; }
+        .emoji-btn {
+            border: 1px solid #d9e2ef; background: white; border-radius: 12px;
+            padding: 6px 10px; font-size: 1.2rem; cursor: pointer; transition: all 0.1s;
+            line-height: 1;
+        }
+        .emoji-btn:hover { background: #eef4ff; border-color: #a8c4ea; }
+        .emoji-btn.selected { background: #1e2b3c; border-color: #1e2b3c; transform: scale(1.05); }
+        .mood-note {
+            margin-top: 8px; width: 100%; border: 1px solid #d9e2ef; border-radius: 12px;
+            padding: 6px 10px; font-size: 0.85rem; font-family: inherit; background: white;
+            color: #1e2b3c; outline: none;
+        }
+        .mood-note:focus { border-color: #2d5a9b; box-shadow: 0 0 0 3px rgba(45,90,155,0.08); }
+        .energy-slider {
+            width: 100%; margin: 8px 0 4px 0; accent-color: #2d5a9b;
+        }
+        .energy-value {
+            font-size: 0.9rem; font-weight: 600; color: #1e2b3c;
+        }
+        .footer-note { text-align: center; font-size: 0.75rem; color: #8896a8; margin-top: 24px; }
+        .notify {
+            background: #1e2b3c; color: white; padding: 12px 22px; border-radius: 50px;
+            font-weight: 500; position: fixed; bottom: 30px; left: 50%;
+            transform: translateX(-50%) translateY(100px); opacity: 0;
+            transition: transform 0.25s, opacity 0.25s; box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+            font-size: 0.95rem; pointer-events: none; z-index: 1000; white-space: nowrap;
+        }
+        .notify.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+    <h1>🌿 每日作息 · 三餐 · 运动 <small>健康打卡</small></h1>
+
+    <div class="subhead">
+        <div class="date-area">
+            <div class="date-badge">📅 <span id="todayDate"></span></div>
+            <div class="week-badge" id="weekBadge">🧋 本周奶茶甜品额度：<span class="quota" id="quotaText">1 / 1</span></div>
+        </div>
+        <div class="top-buttons">
+            <button class="clear-btn export-btn" id="exportBtn" title="导出全部记录">📤 导出记录</button>
+            <button class="clear-btn" id="clearAllBtn" title="清空今日所有记录">🧹 清空今日</button>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- 左侧 -->
+        <div class="card">
+            <h2>⏰ 作息 & 运动</h2>
+            <div class="field-row">
+                <div class="field-label">🌙 昨晚睡觉</div>
+                <input type="time" id="sleepTime" value="23:00">
+            </div>
+            <div class="field-row">
+                <div class="field-label">☀️ 今早起床</div>
+                <input type="time" id="wakeTime" value="07:00">
+            </div>
+            <div style="margin: 20px 0 12px 0; border-top: 1px dashed #d9e2ef;"></div>
+            <div class="field-label" style="margin-bottom: 12px;">🏃 运动记录</div>
+            <div class="checkbox-group" style="flex-direction: column; align-items: flex-start; gap: 12px;">
+                <div class="checkbox-item" style="width: 100%;">
+                    <input type="checkbox" id="runCheck">
+                    <label for="runCheck">🏃‍♂️ 今天去跑步了</label>
+                </div>
+                <div class="checkbox-item" style="width: 100%;">
+                    <input type="checkbox" id="walkCheck">
+                    <label for="walkCheck">🚶 主动步行增加运动量</label>
+                </div>
+            </div>
+
+            <!-- 心情 & 精力 -->
+            <div style="margin: 20px 0 12px 0; border-top: 1px dashed #d9e2ef;"></div>
+            <div class="field-label" style="margin-bottom: 8px;">💗 今日心情 & 精力</div>
+            <div class="mood-grid">
+                <div class="mood-box">
+                    <div class="mood-title">😊 心情</div>
+                    <div class="emoji-picker" id="moodPicker">
+                        <button type="button" class="emoji-btn" data-mood="😄">😄</button>
+                        <button type="button" class="emoji-btn" data-mood="🙂">🙂</button>
+                        <button type="button" class="emoji-btn" data-mood="😐">😐</button>
+                        <button type="button" class="emoji-btn" data-mood="😔">😔</button>
+                        <button type="button" class="emoji-btn" data-mood="😣">😣</button>
+                    </div>
+                    <input type="text" class="mood-note" id="moodNote" placeholder="补充一句话…" maxlength="50">
+                </div>
+                <div class="mood-box">
+                    <div class="mood-title">⚡ 精力</div>
+                    <input type="range" min="1" max="5" value="3" step="1" class="energy-slider" id="energySlider">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; color:#6f7d8f;">
+                        <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                    </div>
+                    <div class="energy-value" id="energyValue" style="text-align:center; margin-top:4px;">⚡ 3 / 5 · 一般</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧：三餐 + 奶茶甜品 -->
+        <div class="card">
+            <h2>🍽️ 三餐情况</h2>
+            <div class="meal-section">
+                <div class="meal-title">🌅 早餐 · 蛋白质</div>
+                <div class="meal-checkboxes">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="breakfastProtein">
+                        <label for="breakfastProtein">有蛋白质</label>
+                    </div>
+                </div>
+            </div>
+            <div class="meal-section">
+                <div class="meal-title">☀️ 午餐 · 蛋白质</div>
+                <div class="meal-checkboxes">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="lunchProtein">
+                        <label for="lunchProtein">有蛋白质</label>
+                    </div>
+                </div>
+            </div>
+            <div class="meal-section">
+                <div class="meal-title">🌙 晚餐 · 蛋白质</div>
+                <div class="meal-checkboxes">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="dinnerProtein">
+                        <label for="dinnerProtein">有蛋白质</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 奶茶甜品 -->
+            <div class="sweet-card">
+                <div class="meal-title" style="margin-bottom:8px;">🧋 今日奶茶 / 甜品</div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="sweetCheck">
+                    <label for="sweetCheck">今天喝了奶茶或吃了甜品</label>
+                </div>
+                <div style="font-size:0.78rem; color:#a06a1e; margin-top:8px;">每周额度 1 次，勾选后本周额度自动扣减。</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-secondary" id="resetTodayBtn">重置为默认</button>
+        <button class="btn btn-primary" id="saveBtn">💾 保存今日记录</button>
+    </div>
+
+    <div class="summary-box" id="summaryBox">
+        <strong>📋 今日小结</strong>
+        <div id="summaryContent" style="margin-top: 6px;">暂无记录，点击「保存今日记录」生成小结。</div>
+    </div>
+    <div class="footer-note">⏱️ 数据保存在浏览器本地，每一天自动隔离。</div>
+</div>
+
+<div class="notify" id="notifyToast">已保存</div>
+
+<script>
+(function() {
+    // ---------- 日期工具 ----------
+    function getTodayKey() {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function displayTodayDate() {
+        const d = new Date();
+        document.getElementById('todayDate').textContent =
+            d.toLocaleDateString('zh-CN', { year:'numeric', month:'long', day:'numeric', weekday:'short' });
+    }
+
+    // 计算"几月第几周"（以周一为一周开始）
+    function getMonthWeekInfo(date) {
+        const d = new Date(date);
+        const year = d.getFullYear();
+        const month = d.getMonth(); // 0-11
+        const firstDay = new Date(year, month, 1);
+        // 本周的周一（相对今天）
+        const dayOfWeek = d.getDay(); // 0=周日
+        const diffToMonday = (dayOfWeek === 0 ? -6 : 1 - dayOfWeek);
+        const monday = new Date(d);
+        monday.setDate(d.getDate() + diffToMonday);
+
+        // 计算这一周的周一是一年中的第几天
+        const startOfYear = new Date(year, 0, 1);
+        const days = Math.floor((monday - startOfYear) / 86400000) + 1;
+
+        // 第几周：以周一所在的那一周归属月份（若周一在上个月，则该周算上个月的最后一周，但用户要的是"几月第几周"通常按跨月周的归属来）
+        // 简化：使用 ISO 周算法更稳。这里采用常见做法：找出该月第一个周一所在周为第1周。
+        // 但为了直观，用"这一周的周一所在月份"作为归属月份。
+        const mondayMonth = monday.getMonth();
+        const mondayYear = monday.getFullYear();
+
+        // 该月第一天
+        const firstOfMonth = new Date(mondayYear, mondayMonth, 1);
+        // 该月第一个周一
+        const firstDayWeekday = firstOfMonth.getDay();
+        const offsetToMonday = (firstDayWeekday === 0 ? 1 : (firstDayWeekday === 1 ? 0 : 8 - firstDayWeekday));
+        // 若 firstDayWeekday 是周一则offset=0，否则跳到下一个周一
+        const firstMonday = new Date(mondayYear, mondayMonth, 1 + (firstDayWeekday === 1 ? 0 : (8 - firstDayWeekday) % 7));
+        // 更稳健的算法：找到该月第一个周一
+        let firstMondayDate = new Date(mondayYear, mondayMonth, 1);
+        while (firstMondayDate.getDay() !== 1) {
+            firstMondayDate.setDate(firstMondayDate.getDate() + 1);
+        }
+        // 计算当前周一与第一个周一相差多少周
+        const diffWeeks = Math.round((monday - firstMondayDate) / (7 * 86400000));
+        const weekNum = diffWeeks + 1;
+
+        return {
+            year: mondayYear,
+            month: mondayMonth + 1,
+            week: weekNum,
+            mondayKey: `${mondayYear}-${String(mondayMonth+1).padStart(2,'0')}-${String(monday.getDate()).padStart(2,'0')}`
+        };
+    }
+
+    // 获取本周（周一到周日）所有日期的 key 列表
+    function getWeekDateKeys(date = new Date()) {
+        const keys = [];
+        const d = new Date(date);
+        const day = d.getDay();
+        const diffToMonday = (day === 0 ? -6 : 1 - day);
+        const monday = new Date(d);
+        monday.setDate(d.getDate() + diffToMonday);
+        for (let i = 0; i < 7; i++) {
+            const cur = new Date(monday);
+            cur.setDate(monday.getDate() + i);
+            keys.push(`${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`);
+        }
+        return keys;
+    }
+
+    // ---------- 数据存储 ----------
+    const STORAGE_PREFIX = 'daily_health_record_';
+    const WEEKLY_SWEET_LIMIT = 1;
+
+    function getDefaultData() {
+        return {
+            sleepTime: '23:00',
+            wakeTime: '07:00',
+            run: false,
+            walk: false,
+            breakfastProtein: false,
+            lunchProtein: false,
+            dinnerProtein: false,
+            sweet: false,
+            mood: '',
+            moodNote: '',
+            energy: 3,
+            savedAt: null,
+        };
+    }
+    function getStorageKey(dateKey) { return STORAGE_PREFIX + (dateKey || getTodayKey()); }
+
+    function loadDataByKey(dateKey) {
+        const stored = localStorage.getItem(getStorageKey(dateKey));
+        if (stored) {
+            try { return { ...getDefaultData(), ...JSON.parse(stored) }; } catch(e) {}
+        }
+        return getDefaultData();
+    }
+    function loadTodayData() { return loadDataByKey(getTodayKey()); }
+
+    function saveTodayData(data) {
+        const key = getStorageKey();
+        const toStore = { ...data, savedAt: Date.now() };
+        localStorage.setItem(key, JSON.stringify(toStore));
+        return toStore;
+    }
+
+    // 统计本周奶茶使用次数
+    function getWeekSweetUsedCount() {
+        const keys = getWeekDateKeys();
+        let used = 0;
+        keys.forEach(k => {
+            const data = loadDataByKey(k);
+            if (data.sweet === true) used++;
+        });
+        return used;
+    }
+
+    // 更新周额度显示
+    function updateWeekQuotaDisplay() {
+        const info = getMonthWeekInfo(new Date());
+        const used = getWeekSweetUsedCount();
+        const remaining = Math.max(0, WEEKLY_SWEET_LIMIT - used);
+        const badge = document.getElementById('weekBadge');
+        const quotaText = document.getElementById('quotaText');
+
+        quotaText.textContent = `${remaining} / ${WEEKLY_SWEET_LIMIT}`;
+        badge.classList.toggle('used', remaining === 0);
+
+        // 把"几月第几周"显示出来
+        badge.innerHTML = `📆 ${info.month}月第${info.week}周 · 🧋 本周奶茶额度：<span class="quota" id="quotaText">${remaining} / ${WEEKLY_SWEET_LIMIT}</span> ${remaining === 0 ? '（已用完）' : ''}`;
+        // 重新获取元素（innerHTML重建后）
+        document.getElementById('quotaText').textContent = `${remaining} / ${WEEKLY_SWEET_LIMIT}`;
+        if (remaining === 0) badge.classList.add('used'); else badge.classList.remove('used');
+    }
+
+    // ---------- DOM ----------
+    const sleepInput = document.getElementById('sleepTime');
+    const wakeInput = document.getElementById('wakeTime');
+    const runCheck = document.getElementById('runCheck');
+    const walkCheck = document.getElementById('walkCheck');
+    const breakfastProtein = document.getElementById('breakfastProtein');
+    const lunchProtein = document.getElementById('lunchProtein');
+    const dinnerProtein = document.getElementById('dinnerProtein');
+    const sweetCheck = document.getElementById('sweetCheck');
+    const moodNote = document.getElementById('moodNote');
+    const energySlider = document.getElementById('energySlider');
+    const energyValue = document.getElementById('energyValue');
+    const moodPicker = document.getElementById('moodPicker');
+
+    const saveBtn = document.getElementById('saveBtn');
+    const resetTodayBtn = document.getElementById('resetTodayBtn');
+    const clearAllBtn = document.getElementById('clearAllBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const summaryContent = document.getElementById('summaryContent');
+    const notifyToast = document.getElementById('notifyToast');
+
+    let selectedMood = '';
+
+    // 心情按钮
+    moodPicker.addEventListener('click', (e) => {
+        const btn = e.target.closest('.emoji-btn');
+        if (!btn) return;
+        const mood = btn.getAttribute('data-mood');
+        if (selectedMood === mood) {
+            selectedMood = '';
+            btn.classList.remove('selected');
+        } else {
+            selectedMood = mood;
+            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        }
+        updateSummary(collectFormData());
+    });
+
+    // 精力滑块
+    const energyLabels = ['', '很差', '较差', '一般', '不错', '很好'];
+    energySlider.addEventListener('input', () => {
+        const v = parseInt(energySlider.value, 10);
+        energyValue.textContent = `⚡ ${v} / 5 · ${energyLabels[v]}`;
+        updateSummary(collectFormData());
+    });
+
+    // 收集
+    function collectFormData() {
+        return {
+            sleepTime: sleepInput.value || '23:00',
+            wakeTime: wakeInput.value || '07:00',
+            run: runCheck.checked,
+            walk: walkCheck.checked,
+            breakfastProtein: breakfastProtein.checked,
+            lunchProtein: lunchProtein.checked,
+            dinnerProtein: dinnerProtein.checked,
+            sweet: sweetCheck.checked,
+            mood: selectedMood,
+            moodNote: moodNote.value.trim(),
+            energy: parseInt(energySlider.value, 10),
+        };
+    }
+
+    // 填充
+    function populateForm(data) {
+        sleepInput.value = data.sleepTime || '23:00';
+        wakeInput.value = data.wakeTime || '07:00';
+        runCheck.checked = !!data.run;
+        walkCheck.checked = !!data.walk;
+        breakfastProtein.checked = !!data.breakfastProtein;
+        lunchProtein.checked = !!data.lunchProtein;
+        dinnerProtein.checked = !!data.dinnerProtein;
+        sweetCheck.checked = !!data.sweet;
+        moodNote.value = data.moodNote || '';
+        energySlider.value = data.energy || 3;
+        const v = parseInt(energySlider.value, 10);
+        energyValue.textContent = `⚡ ${v} / 5 · ${energyLabels[v]}`;
+
+        selectedMood = data.mood || '';
+        document.querySelectorAll('.emoji-btn').forEach(b => {
+            b.classList.toggle('selected', b.getAttribute('data-mood') === selectedMood);
+        });
+    }
+
+    // 摘要
+    function updateSummary(data) {
+        const d = data || collectFormData();
+        const sportList = [];
+        if (d.run) sportList.push('🏃 跑步');
+        if (d.walk) sportList.push('🚶 主动步行');
+        const sportText = sportList.length ? sportList.join(' · ') : '未记录运动';
+
+        const proteinMeals = [];
+        if (d.breakfastProtein) proteinMeals.push('早餐');
+        if (d.lunchProtein) proteinMeals.push('午餐');
+        if (d.dinnerProtein) proteinMeals.push('晚餐');
+        const proteinText = proteinMeals.length ? proteinMeals.join('、') + ' 有蛋白质' : '未记录蛋白质';
+
+        const sweetText = d.sweet ? '🧋 有奶茶/甜品' : '🧋 无奶茶/甜品';
+        const moodText = d.mood ? `心情 ${d.mood}` : '心情未记录';
+        const moodNoteText = d.moodNote ? `「${d.moodNote}」` : '';
+        const energyText = `精力 ${d.energy}/5`;
+
+        summaryContent.innerHTML = `
+            <div style="display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:6px;">
+                <span class="tag">🌙 ${d.sleepTime}</span>
+                <span class="tag">☀️ ${d.wakeTime}</span>
+                <span class="tag">${d.run || d.walk ? '🏅' : '⚪'} ${sportText}</span>
+                <span class="tag">🥩 ${proteinText}</span>
+                <span class="tag">${d.sweet ? '🧋' : '⚪'} ${sweetText}</span>
+                <span class="tag">💗 ${moodText} ${moodNoteText}</span>
+                <span class="tag">⚡ ${energyText}</span>
+            </div>
+        `;
+    }
+
+    // 轻提示
+    let toastTimer = null;
+    function showToast(msg) {
+        notifyToast.textContent = msg || '已保存';
+        notifyToast.classList.add('show');
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => notifyToast.classList.remove('show'), 1800);
+    }
+
+    // 刷新整体
+    function refreshUI() {
+        const data = loadTodayData();
+        populateForm(data);
+        updateSummary(data);
+        updateWeekQuotaDisplay();
+    }
+
+    // 保存
+    function handleSave() {
+        const data = collectFormData();
+        saveTodayData(data);
+        updateSummary(data);
+        updateWeekQuotaDisplay();
+        showToast('✅ 今日记录已保存');
+    }
+
+    // 重置默认
+    function handleResetDefault() {
+        const def = getDefaultData();
+        populateForm(def);
+        updateSummary(def);
+        showToast('↩️ 已重置为默认值（未保存）');
+    }
+
+    // 清空今日
+    function handleClearAll() {
+        localStorage.removeItem(getStorageKey());
+        const def = getDefaultData();
+        populateForm(def);
+        updateSummary(def);
+        updateWeekQuotaDisplay();
+        showToast('🧹 今日记录已清空');
+    }
+
+    // 导出全部记录
+    function handleExport() {
+        const all = {};
+        Object.keys(localStorage).forEach(k => {
+            if (k.startsWith(STORAGE_PREFIX)) {
+                const dateKey = k.replace(STORAGE_PREFIX, '');
+                try { all[dateKey] = JSON.parse(localStorage.getItem(k)); } catch(e) {}
+            }
+        });
+        if (Object.keys(all).length === 0) {
+            showToast('暂无记录可导出');
+            return;
+        }
+        // 按日期排序
+        const sorted = {};
+        Object.keys(all).sort().forEach(k => sorted[k] = all[k]);
+
+        const blob = new Blob([JSON.stringify(sorted, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `健康记录备份_${getTodayKey()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast(`📤 已导出 ${Object.keys(sorted).length} 天记录`);
+    }
+
+    // 输入监听
+    function bindInputs() {
+        const inputs = [sleepInput, wakeInput, runCheck, walkCheck, breakfastProtein, lunchProtein, dinnerProtein, sweetCheck, moodNote, energySlider];
+        inputs.forEach(el => {
+            const evt = (el.type === 'time' || el.type === 'range' || el.type === 'text') ? 'input' : 'change';
+            el.addEventListener(evt, () => updateSummary(collectFormData()));
+        });
+        // 奶茶勾选后立即更新周额度预览
+        sweetCheck.addEventListener('change', () => {
+            updateWeekQuotaDisplay();
+            updateSummary(collectFormData());
+        });
+    }
+
+    // 初始化
+    function init() {
+        displayTodayDate();
+        bindInputs();
+        refreshUI();
+
+        saveBtn.addEventListener('click', handleSave);
+        resetTodayBtn.addEventListener('click', handleResetDefault);
+        clearAllBtn.addEventListener('click', handleClearAll);
+        exportBtn.addEventListener('click', handleExport);
+    }
+
+    init();
+})();
+</script>
+</body>
+</html>
